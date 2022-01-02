@@ -15,8 +15,7 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
 
-    implementation("org.apache.commons:commons-csv:1.8")
-//    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 }
 
 tasks.test {
