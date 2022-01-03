@@ -14,8 +14,11 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.6")
+    implementation("javax.xml.bind:jaxb-api:2.3.0")
+    runtimeOnly("mysql:mysql-connector-java:8.0.25")
 }
 
 tasks.test {

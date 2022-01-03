@@ -1,25 +1,29 @@
 USE habits;
 
-CREATE TABLE habits.DayRecord (
+CREATE TABLE day_record (
   id INT NOT NULL AUTO_INCREMENT,
   habit VARCHAR(255) NOT NULL DEFAULT '',
   date DATETIME NOT NULL,
-  dayOfWeek VARCHAR(255) NOT NULL DEFAULT '',
-  isDone TINYINT NOT NULL,
-  PRIMARY KEY (id)
+  day_of_week VARCHAR(255) NOT NULL DEFAULT '',
+  is_done TINYINT NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE(habit, date)
 )
 ENGINE = INNODB,
 CHARACTER SET utf8mb4,
 COLLATE utf8mb4_0900_ai_ci;
 
-CREATE TABLE habits.WeekRecord (
+CREATE TABLE week_record (
   id INT NOT NULL AUTO_INCREMENT,
-  `range` VARCHAR(255) NOT NULL DEFAULT '',
-  `from` DATETIME NOT NULL,
-  `to` DATETIME NOT NULL,
+  week_range VARCHAR(255) NOT NULL DEFAULT '',
+  from_date DATETIME NOT NULL,
+  to_date DATETIME NOT NULL,
   habit VARCHAR(255) NOT NULL DEFAULT '',
   desired INT NOT NULL,
   actual INT NOT NULL,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  UNIQUE(habit, week_range)
 )
-ENGINE = INNODB;
+ENGINE = INNODB,
+CHARACTER SET utf8mb4,
+COLLATE utf8mb4_0900_ai_ci;
