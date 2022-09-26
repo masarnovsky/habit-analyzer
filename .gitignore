@@ -5,6 +5,7 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 **/resources/files/
+**/resources/archive/
 
 ### IntelliJ IDEA ###
 .idea

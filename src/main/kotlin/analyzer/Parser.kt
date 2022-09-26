@@ -15,6 +15,7 @@ const val ONE_MONTH_PATTER = "(?<from>[0-9]+)-(?<to>[0-9]+) (?<month>[A-Za-z]*)"
 const val TWO_MONTH_PATTER = "(?<from>[0-9]+) (?<monthFrom>[A-Za-z]*) - (?<to>[0-9]+) (?<monthTo>[A-Za-z]*)"
 const val HABIT_TITLE = "(?<habit>[A-Za-z0-9 ]*)\\((?<desired>[0-9]+)\\)"
 const val YES = "Yes"
+const val currentYear = 2022
 
 @Service
 class Parser(
@@ -56,7 +57,7 @@ class Parser(
 
         val (fromDate, toDate) = parseDateRange(range)
         val records = File(path.pathString).useLines { it.toList() }.map {
-            it.split(",").filter { value -> value.isNotBlank() && value != "status" }
+            it.split(",")
         }.toList()
 
         return processRecords(range, fromDate, toDate, records)
@@ -69,44 +70,38 @@ class Parser(
         records: List<List<String>>
     ): MutableMap<String, Pair<WeekRecord, List<DayRecord>>> {
         val habitsMap = mutableMapOf<String, Pair<WeekRecord, List<DayRecord>>>()
-        val columns = records[0].size
-        for (i in 1 until columns) {
-            var currentDate = fromDate
-            val week = WeekRecord(range = range, from = fromDate, to = toDate)
-            val days = mutableListOf<DayRecord>()
-            for (j in records.indices) {
-                val value = records[j][i]
-                if (j == 0) {
-                    parseHeaderColumn(value, week)
-                } else {
-                    val day = parseHabitColumn(week.habit, value, currentDate)
-                    days.add(day)
 
-                    currentDate = currentDate.plusDays(1)
-                }
-            }
-            week.actual = days.count { it.isDone }
-
-            if (toDate != currentDate.minusDays(1)) throw RuntimeException("$toDate != $currentDate for range $range")
-            habitsMap[week.habit!!] = Pair(week, days)
-        }
-
+        records.drop(1)
+            .map { record -> parseRecord(range, fromDate, toDate, record) }
+            .map { data -> habitsMap.put(data.first, data.second)}
         return habitsMap
     }
 
-    private fun parseHabitColumn(habit: String?, value: String, currentDate: LocalDate): DayRecord {
-        val day = DayRecord()
-        day.habit = habit
-        if (value == YES) {
-            day.isDone = true
+    private fun parseRecord(range: String, fromDate: LocalDate, toDate: LocalDate, record: List<String>): Pair<String, Pair<WeekRecord, MutableList<DayRecord>>> {
+        val habit = record[0]
+        var currentDate = fromDate
+        val week = WeekRecord(range = range, from = fromDate, to = toDate)
+        processDesiredWeekAmount(habit, week)
+        val days = mutableListOf<DayRecord>()
+        for (i in 1 until record.size) {
+            val day = DayRecord()
+            day.habit = week.habit
+            if (record[i] == YES) {
+                day.isDone = true
+            }
+            day.date = currentDate
+            day.dayOfWeek = currentDate.dayOfWeek.name
+            days.add(day)
+            currentDate = currentDate.plusDays(1)
         }
-        day.date = currentDate
-        day.dayOfWeek = currentDate.dayOfWeek.name
 
-        return day
+        week.actual = days.count { it.isDone }
+
+        if (toDate != currentDate.minusDays(1)) throw RuntimeException("toDate != currentDate for range $range")
+        return Pair(week.habit!!, Pair(week, days))
     }
 
-    private fun parseHeaderColumn(value: String, week: WeekRecord) {
+    private fun processDesiredWeekAmount(value: String, week: WeekRecord) {
         println(value)
         val tryHabit = Regex(HABIT_TITLE).find(value)!!
         val (habit, desired) = tryHabit.destructured
@@ -120,8 +115,8 @@ class Parser(
         if (firstTry != null) {
             val (from, to, month) = firstTry.destructured
 
-            val fromRangeString = "$from $month 2021"
-            val toRangeString = "$to $month 2021"
+            val fromRangeString = "$from $month $currentYear"
+            val toRangeString = "$to $month $currentYear"
             val fromRange = LocalDate.parse(fromRangeString, DateTimeFormatter.ofPattern("dd MMM yyyy"))
             val toRange = LocalDate.parse(toRangeString, DateTimeFormatter.ofPattern("dd MMM yyyy"))
 
@@ -132,8 +127,8 @@ class Parser(
 
             val (from, monthFrom, to, monthTo) = secondTry.destructured
 
-            val fromRangeString = "$from $monthFrom 2021"
-            val toRangeString = "$to $monthTo 2021"
+            val fromRangeString = "$from $monthFrom $currentYear"
+            val toRangeString = "$to $monthTo $currentYear"
             val fromRange = LocalDate.parse(fromRangeString, DateTimeFormatter.ofPattern("dd MMM yyyy"))
             val toRange = LocalDate.parse(toRangeString, DateTimeFormatter.ofPattern("dd MMM yyyy"))
 
