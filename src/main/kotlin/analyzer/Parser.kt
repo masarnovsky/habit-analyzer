@@ -11,9 +11,10 @@ import kotlin.io.path.name
 import kotlin.io.path.pathString
 import kotlin.streams.toList
 
-const val ONE_MONTH_PATTER = "(?<from>[0-9]+)-(?<to>[0-9]+) (?<month>[A-Za-z]*)"
-const val TWO_MONTH_PATTER = "(?<from>[0-9]+) (?<monthFrom>[A-Za-z]*) - (?<to>[0-9]+) (?<monthTo>[A-Za-z]*)"
+const val ONE_MONTH_PATTERN = "(?<from>[0-9]+)-(?<to>[0-9]+) (?<month>[A-Za-z]*)"
+const val TWO_MONTH_PATTERN = "(?<from>[0-9]+) (?<monthFrom>[A-Za-z]*) - (?<to>[0-9]+) (?<monthTo>[A-Za-z]*)"
 const val HABIT_TITLE = "(?<habit>[A-Za-z0-9 ]*)\\((?<desired>[0-9]+)\\)"
+const val EOF_PATTERN = " (?<hash>[A-Za-z0-9]*).csv$"
 const val YES = "Yes"
 const val currentYear = 2022
 
@@ -53,14 +54,17 @@ class Parser(
         val fileName = path.fileName
         println("parse $fileName")
 
-        val range = fileName.name.dropLast(4)
-
+        val range = removeRedundantData(fileName)
         val (fromDate, toDate) = parseDateRange(range)
         val records = File(path.pathString).useLines { it.toList() }.map {
             it.split(",")
         }.toList()
 
         return processRecords(range, fromDate, toDate, records)
+    }
+
+    private fun removeRedundantData(fileName: Path): String {
+        return fileName.name.replace(Regex(EOF_PATTERN), "")
     }
 
     fun processRecords(
@@ -73,11 +77,16 @@ class Parser(
 
         records.drop(1)
             .map { record -> parseRecord(range, fromDate, toDate, record) }
-            .map { data -> habitsMap.put(data.first, data.second)}
+            .map { data -> habitsMap.put(data.first, data.second) }
         return habitsMap
     }
 
-    private fun parseRecord(range: String, fromDate: LocalDate, toDate: LocalDate, record: List<String>): Pair<String, Pair<WeekRecord, MutableList<DayRecord>>> {
+    private fun parseRecord(
+        range: String,
+        fromDate: LocalDate,
+        toDate: LocalDate,
+        record: List<String>
+    ): Pair<String, Pair<WeekRecord, MutableList<DayRecord>>> {
         val habit = record[0]
         var currentDate = fromDate
         val week = WeekRecord(range = range, from = fromDate, to = toDate)
@@ -110,7 +119,7 @@ class Parser(
     }
 
     fun parseDateRange(range: String): Pair<LocalDate, LocalDate> {
-        val firstTry = Regex(ONE_MONTH_PATTER).find(range)
+        val firstTry = Regex(ONE_MONTH_PATTERN).find(range)
 
         if (firstTry != null) {
             val (from, to, month) = firstTry.destructured
@@ -123,7 +132,7 @@ class Parser(
             return Pair(fromRange, toRange)
         } else {
             val secondTry =
-                Regex(TWO_MONTH_PATTER).find(range) ?: throw RuntimeException("Can't parse date range $range")
+                Regex(TWO_MONTH_PATTERN).find(range) ?: throw RuntimeException("Can't parse date range $range")
 
             val (from, monthFrom, to, monthTo) = secondTry.destructured
 
